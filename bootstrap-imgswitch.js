@@ -21,6 +21,8 @@
         this.src              = null
     }
 
+    ImgSwitch.VERSION = '1.0.5'
+
     // defaults
     ImgSwitch.DEFAULTS = {
         prop: 'value',
@@ -66,7 +68,14 @@
     
     // getters and setters
     ImgSwitch.prototype.setSrc = function($src) {
-        this.$element.attr('src', this.$element.data($src))
+        if($(this).is('img')) {
+            this.$element.attr('src', this.$element.data($src))
+        } else {
+            //this.$element.attr('style', 'background-image: url("'+this.$element.data($src)+'");')
+            this.$element.css({
+                'backgroundImage': this.$element.data($src) !== 'none' ? 'url("'+this.$element.data($src)+'")' : 'none'
+            })
+        }
         return this
     }
     
@@ -76,15 +85,30 @@
     }
     
     ImgSwitch.prototype.getItems = function() {
-        var that = this
+        var that = this, temp = new Array()
         this.items = new Array()
+        this.widths = $.makeArray(this.options.widths)
         $.each(this.$element.data(), function(index, value){
             $.each(that.options.widths, function(idx, val){
                 if(index === idx) {
-                    that.items.push([idx, val])
+                    that.items.push({v: val, k: idx})
                 }
             })
         })
+        this.items.sort(function(a,b){
+            if (a.v > b.v) {
+                return 1
+            }
+            if (a.v < b.v) {
+                return -1
+            }
+            return 0;
+        })
+        
+        $.each(this.items, function(index, value){
+            temp.push([value.k, value.v])
+        })
+        this.items = temp
     }
     
     ImgSwitch.prototype.getLastItem = function(items){
@@ -108,14 +132,11 @@
     // return the current widths/name
     ImgSwitch.prototype.getCurrentWidth = function(){
         var that = this
-        $.each(this.items.reverse(), function(index, value){
-            if(that.currentRes > value[1]) {
-                that.currentWidth = value[1]
-                that.currentWidthName = value[0]
-            }
+        $.each(this.items, function(index, value){
             if(that.currentRes < value[1]) {
                 that.currentWidth = value[1]
                 that.currentWidthName = value[0]
+                return false
             } 
         })
         return this.currentWidth
@@ -162,12 +183,12 @@
         })
     })
 
-    
     $(window).smartresize(function(){
         $('[data-ride="imgswitch"]').each(function() {
             var $imgswitch = $(this)
             $imgswitch.imgswitch('resize')
         })
     });
+    
 
 }(window.jQuery);
